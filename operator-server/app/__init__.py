@@ -14,7 +14,9 @@ def create_app():
     db.init_app(app)
 
     from .routes.auth import auth_bp
+    from .routes.keys import keys_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(keys_bp, url_prefix="/keys")
 
     with app.app_context():
         db.create_all()
