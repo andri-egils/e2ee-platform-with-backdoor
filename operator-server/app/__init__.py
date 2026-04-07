@@ -1,5 +1,5 @@
 from flask import Flask
-from .extensions import db
+from .extensions import db, socketio
 from dotenv import load_dotenv
 import os
 
@@ -12,11 +12,17 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
     db.init_app(app)
+    socketio.init_app(app)
 
     from .routes.auth import auth_bp
     from .routes.keys import keys_bp
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(keys_bp, url_prefix="/keys")
+    from .routes.messages import messages_bp
+    app.register_blueprint(auth_bp,     url_prefix="/auth")
+    app.register_blueprint(keys_bp,     url_prefix="/keys")
+    app.register_blueprint(messages_bp, url_prefix="/messages")
+
+    # Register socket event handlers
+    import app.sockets.events
 
     with app.app_context():
         db.create_all()
