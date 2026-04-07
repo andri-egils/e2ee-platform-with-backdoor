@@ -22,7 +22,7 @@ def create_app():
     app.register_blueprint(messages_bp, url_prefix="/messages")
 
     # Register socket event handlers
-    import app.sockets.events
+    from .sockets import events
 
     with app.app_context():
         db.create_all()
