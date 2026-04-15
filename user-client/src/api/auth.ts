@@ -1,16 +1,21 @@
-const API_URL = import.meta.env.VITE_API_URL;
+import axios from 'axios'
 
-export async function registerUser() {
-  const res = await fetch(`${API_URL}/auth/register`, { method: "POST" });
-  if (!res.ok) throw new Error("Failed to register")
-  return res.json()
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050'
+
+export interface RegisterResponse {
+    token: string
+    short_code: string
 }
 
-export async function validateUser(token: string) {
-  const res = await fetch(`${API_URL}/auth/validate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
-  });
-  return res.json()
+export async function registerUser(): Promise<RegisterResponse> {
+    const response = await axios.post(`${BASE_URL}/auth/register`)
+    return response.data
 }
+
+export async function validateUser(token: string): Promise<{ valid: boolean; short_code: string }> {
+    const response = await axios.post(`${BASE_URL}/auth/validate`, { token })
+    return response.data
+}
+
+export const register   = registerUser
+export const validate   = validateUser
