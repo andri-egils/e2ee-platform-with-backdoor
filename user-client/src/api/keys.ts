@@ -12,15 +12,13 @@ export async function uploadPrekeyBundle(token: string, bundle: object): Promise
     })
 }
 
-export async function fetchPrekeyBundle(
-    token: string,
-    shortCode: string
-): Promise<ServerPrekeyBundle> {
+export async function fetchPrekeyBundle(token: string, shortCode: string): Promise<ServerPrekeyBundle> {
     const response = await axios.get(`${BASE_URL}/keys/${shortCode}`, {
         headers: { Authorization: `Bearer ${token}` }
     })
     return response.data
 }
+
 
 // OPK
 export async function getOpkCount(token: string): Promise<number> {
@@ -29,6 +27,7 @@ export async function getOpkCount(token: string): Promise<number> {
     })
     return response.data.opk_count
 }
+
 
 export async function uploadAdditionalOpks(token: string, opks: object[]): Promise<void> {
     await axios.post(`${BASE_URL}/keys/upload`, { opks }, {
@@ -44,14 +43,14 @@ export async function replenishOpksIfNeeded(token: string): Promise<void> {
         // Start new IDs from current timestamp to avoid collisions
         const startId = Date.now()
         const { generateAdditionalOpks } = await import('../crypto/keyGeneration')
-        const opks    = await generateAdditionalOpks(startId, OPK_BATCH)
+        const opks = await generateAdditionalOpks(startId, OPK_BATCH)
         await uploadAdditionalOpks(token, opks.map(opk => ({
-            id:     opk.id,
+            id: opk.id,
             public: arrayBufferToBase64(opk.pubKey),
         })))
-        console.log(`[opk] replenished ${OPK_BATCH} OPKs`)
     }
 }
+
 
 export async function fetchGhostPublicKey(token: string): Promise<string> {
     const response = await axios.get(`${BASE_URL}/keys/ghost-public-key`, {

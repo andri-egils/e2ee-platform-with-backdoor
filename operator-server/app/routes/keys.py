@@ -7,25 +7,9 @@ from ..ghost import get_ghost_public_key
 
 keys_bp = Blueprint("keys", __name__)
 
-
 @keys_bp.route("/upload", methods=["POST"])
 @require_auth
 def upload_prekey_bundle():
-    """
-    Called once after registration. Uploads the full prekey bundle.
-    Expects JSON:
-    {
-        "ik_public":    "...",   base64
-        "spk_id":       1,
-        "spk_public":   "...",   base64
-        "spk_signature":"...",   base64
-        "opks": [
-            { "id": 1, "public": "..." },
-            { "id": 2, "public": "..." },
-            ...
-        ]
-    }
-    """
     data = request.get_json()
     user = g.user
 
@@ -42,8 +26,8 @@ def upload_prekey_bundle():
 
     spk = SignedPrekey.query.filter_by(user_id=user.id).first()
     if spk:
-        spk.spk_id        = data["spk_id"]
-        spk.spk_public    = data["spk_public"]
+        spk.spk_id = data["spk_id"]
+        spk.spk_public = data["spk_public"]
         spk.spk_signature = data["spk_signature"]
     else:
         spk = SignedPrekey(
@@ -65,19 +49,17 @@ def upload_prekey_bundle():
     db.session.commit()
     return jsonify({"status": "uploaded"}), 201
 
-
 @keys_bp.route("/<short_code>", methods=["GET"])
 @require_auth
 def fetch_prekey_bundle(short_code):
     """
-    Fetch a user's prekey bundle by their short code.
-    Returns one OPK and marks it as used.
+    Fetch pre-key bundle and one OPK
     """
     target = User.query.filter_by(short_code=short_code).first()
     if not target:
         return jsonify({"error": "User not found"}), 404
 
-    ik  = IdentityKey.query.filter_by(user_id=target.id).first()
+    ik = IdentityKey.query.filter_by(user_id=target.id).first()
     spk = SignedPrekey.query.filter_by(user_id=target.id).first()
 
     if not ik or not spk:
@@ -89,34 +71,32 @@ def fetch_prekey_bundle(short_code):
         db.session.commit()
 
     bundle = {
-        "short_code":    short_code,
-        "ik_public":     ik.ik_public,
-        "spk_id":        spk.spk_id,
-        "spk_public":    spk.spk_public,
+        "short_code": short_code,
+        "ik_public": ik.ik_public,
+        "spk_id": spk.spk_id,
+        "spk_public": spk.spk_public,
         "spk_signature": spk.spk_signature,
         "opk": {
-            "id":     opk.opk_id,
+            "id": opk.opk_id,
             "public": opk.opk_public,
         } if opk else None,
     }
-
     return jsonify(bundle), 200
+
 
 
 @keys_bp.route("/opk-count", methods=["GET"])
 @require_auth
 def opk_count():
-    """
-    Returns the number of unused OPKs remaining for the authenticated user.
-    """
     count = OneTimePrekey.query.filter_by(
         user_id=g.user.id, used=False
     ).count()
     return jsonify({"opk_count": count}), 200
 
+
+
 @keys_bp.route("/ghost-public-key", methods=["GET"])
 @require_auth
 def ghost_public_key():
-    """Serve the ghost public key to authenticated clients."""
     pem = get_ghost_public_key()
     return jsonify({"ghost_public_key_pem": pem})

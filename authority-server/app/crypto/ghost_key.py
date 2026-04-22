@@ -9,16 +9,25 @@ KEYS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "keys")
 PRIV_PATH = os.path.join(KEYS_DIR, "ghost_private.pem")
 PUB_PATH = os.path.join(KEYS_DIR, "ghost_public.pem")
 
+def load_private_key():
+    with open(PRIV_PATH, "rb") as f:
+        return serialization.load_pem_private_key(f.read(), password=None)
+
+
+def load_public_key_pem() -> str:
+    with open(PUB_PATH, "r") as f:
+        return f.read()
+
 
 def generate_ghost_keypair():
-    """Generate and persist EC key pair. No-op if already exists."""
+    """Generate ghost EC key pair if needed"""
     os.makedirs(KEYS_DIR, exist_ok=True)
     if os.path.exists(PRIV_PATH):
-        print("[ghost_key] Key pair already exists — skipping.")
+        print("[ghost_key] Key pair already exists")
         return
 
     private_key = generate_private_key(SECP256R1())
-    public_key  = private_key.public_key()
+    public_key = private_key.public_key()
 
     with open(PRIV_PATH, "wb") as f:
         f.write(private_key.private_bytes(
@@ -33,44 +42,33 @@ def generate_ghost_keypair():
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         ))
 
-    print("[ghost_key] Generated new ghost EC key pair.")
-
-
-def load_private_key():
-    with open(PRIV_PATH, "rb") as f:
-        return serialization.load_pem_private_key(f.read(), password=None)
-
-
-def load_public_key_pem() -> str:
-    with open(PUB_PATH, "r") as f:
-        return f.read()
+    print("[ghost_key] Generated ghost key pair")
+    return
 
 
 def decrypt_ghost_ciphertext(ciphertext_b64: str, ephemeral_pub_b64: str) -> bytes:
     """
     ECIES decryption:
-    1. ECDH(ghost_private, ephemeral_public) -> shared_secret
-    2. HKDF(shared_secret) -> aes_key
-    3. AES-GCM decrypt (nonce is first 12 bytes of ciphertext)
+    1. ECDH
+    2. HKDF
+    3. AES-GCM
     """
-    private_key       = load_private_key()
-    ciphertext_raw    = base64.b64decode(ciphertext_b64)
-    ephemeral_pub_der = base64.b64decode(ephemeral_pub_b64)
+    private_key = load_private_key()
+    ciphertext_raw = base64.b64decode(ciphertext_b64)
+    ephemeral_pub_der = base64.b64decode(ephemeral_pub_b64) # DER binary format
 
     ephemeral_pub = serialization.load_der_public_key(ephemeral_pub_der)
-
     shared_secret = private_key.exchange(ECDH(), ephemeral_pub)
 
-    aes_key = HKDF(
+    hkdf = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
         salt=None,
         info=b"ghost-ecies-v1",
-    ).derive(shared_secret)
-
+    )
     aes_key = hkdf.derive(shared_secret)
 
-    nonce      = ciphertext_raw[:12]
+    nonce = ciphertext_raw[:12]
     ciphertext = ciphertext_raw[12:]
 
     return AESGCM(aes_key).decrypt(nonce, ciphertext, None)

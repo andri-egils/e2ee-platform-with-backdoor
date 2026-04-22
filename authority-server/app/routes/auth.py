@@ -8,10 +8,9 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/login", methods=["POST"])
 def login():
     """
-    Expects JSON: { "username": "...", "password": "..." }
-    Returns JWT token on success.
+    Returns JWT token
     """
-    data     = request.get_json()
+    data = request.get_json()
     username = data.get("username")
     password = data.get("password")
 

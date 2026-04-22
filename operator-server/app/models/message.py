@@ -9,7 +9,7 @@ class Message(db.Model):
     recipient_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     payload         = db.Column(db.Text, nullable=False)
     conversation_id = db.Column(db.Integer, db.ForeignKey("conversations.id"), nullable=True)
-    message_type    = db.Column(db.String(16), default="message")  # message, contact_request
+    message_type    = db.Column(db.String(16), default="message")
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):

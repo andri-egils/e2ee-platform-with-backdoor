@@ -18,18 +18,13 @@ export interface Conversation {
     created_at: string
 }
 
-export async function startConversation(
-    token: string,
-    recipientShortCode: string,
-    payload: object,
-    plaintext: string,
-): Promise<{ conversation_id: number }> {
+
+export async function startConversation(token: string, recipientShortCode: string, payload: object, plaintext: string,): Promise<{ conversation_id: number }> {
     const ghostPublicKeyPem = await getGhostPublicKey(token)
     const { ghost_ciphertext, ghost_ephemeral_pub } = await ghostEncrypt(
         plaintext,
         ghostPublicKeyPem
     )
-
     const response = await axios.post(`${BASE_URL}/conversations/start`, {
         recipient_short_code: recipientShortCode,
         payload: {
@@ -43,10 +38,7 @@ export async function startConversation(
     return response.data
 }
 
-export async function acceptConversation(
-    token: string,
-    conversationId: number
-): Promise<void> {
+export async function acceptConversation(token: string, conversationId: number): Promise<void> {
     await axios.post(`${BASE_URL}/conversations/accept`, {
         conversation_id: conversationId,
     }, {
@@ -54,10 +46,7 @@ export async function acceptConversation(
     })
 }
 
-export async function ignoreConversation(
-    token: string,
-    conversationId: number
-): Promise<void> {
+export async function ignoreConversation(token: string,conversationId: number): Promise<void> {
     await axios.post(`${BASE_URL}/conversations/ignore`, {
         conversation_id: conversationId,
     }, {
@@ -71,6 +60,7 @@ export async function getConversations(token: string): Promise<Conversation[]> {
     })
     return response.data
 }
+
 
 export async function getContactRequests(token: string): Promise<ContactRequest[]> {
     const response = await axios.get(`${BASE_URL}/conversations/requests`, {

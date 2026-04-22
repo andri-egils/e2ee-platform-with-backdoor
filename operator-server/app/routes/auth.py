@@ -9,10 +9,9 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/register", methods=["POST"])
 def register():
     """
-    Generates a token and short code for a new anonymous user.
-    Returns the plaintext token once
+    Generates a token and short code
     """
-    token      = generate_token()
+    token = generate_token()
     token_hash = hash_token(token)
     short_code = generate_unique_short_code()
 
@@ -29,7 +28,7 @@ def register():
 @auth_bp.route("/validate", methods=["POST"])
 def validate():
     """
-    Validates a token. Used by the client to check if a stored token is still valid.
+    For client to check if their stored token is still valid
     """
     data  = request.get_json()
     token = data.get("token")

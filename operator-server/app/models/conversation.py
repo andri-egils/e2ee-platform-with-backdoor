@@ -7,7 +7,7 @@ class Conversation(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     initiator_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    status       = db.Column(db.String(16), default="pending")  # pending, accepted, ignored
+    status       = db.Column(db.String(16), default="pending")
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self, current_user_id: int):

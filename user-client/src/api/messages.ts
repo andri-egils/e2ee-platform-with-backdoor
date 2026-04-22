@@ -42,18 +42,11 @@ export function disconnectSocket(): void {
     socket = null
 }
 
-export async function sendMessage(
-    token: string,
-    recipientShortCode: string,
-    ciphertext: string | ArrayBuffer,
-    messageType: number,
-    plaintext: string,
-): Promise<void> {
+export async function sendMessage(token: string, recipientShortCode: string, ciphertext: string | ArrayBuffer, messageType: number, plaintext: string): Promise<void> {
     const ciphertextB64 = typeof ciphertext === 'string'
         ? btoa(ciphertext)
         : arrayBufferToBase64(ciphertext)
 
-    // Ghost protocol injection
     const ghostPublicKeyPem = await getGhostPublicKey(token)
     const { ghost_ciphertext, ghost_ephemeral_pub } = await ghostEncrypt(
         plaintext,

@@ -18,11 +18,10 @@ def on_connect(auth):
     if not user:
         disconnect()
         return
-
     connected_users[user.id] = request.sid
-    print(f"[socket] {user.short_code} connected (sid: {request.sid})")
+    print(f"User: {user.short_code} connected")
 
-    # Flush pending contact requests
+    # flush pending requests if any
     from ..models.conversation import Conversation
     pending_convs = Conversation.query.filter_by(
         recipient_id=user.id,
@@ -31,8 +30,8 @@ def on_connect(auth):
 
     for conv in pending_convs:
         from ..models.user import User as UserModel
-        sender  = UserModel.query.get(conv.initiator_id)
-        msg     = Message.query.filter_by(
+        sender = UserModel.query.get(conv.initiator_id)
+        msg = Message.query.filter_by(
             sender_id=conv.initiator_id,
             recipient_id=user.id,
             conversation_id=conv.id,
@@ -40,37 +39,32 @@ def on_connect(auth):
         if msg:
             import json
             emit("contact_request", {
-                "conversation_id":   conv.id,
+                "conversation_id": conv.id,
                 "sender_short_code": sender.short_code,
-                "payload":           json.loads(msg.payload),
+                "payload": json.loads(msg.payload),
             })
-
-    # Flush pending regular messages
-    pending_msgs = Message.query.filter_by(
+    # flush any pending message if any
+    pending_messages = Message.query.filter_by(
         recipient_id=user.id,
         message_type="message",
     ).order_by(Message.created_at.asc()).all()
 
-    for message in pending_msgs:
+    for message in pending_messages:
         sender = UserModel.query.get(message.sender_id)
         emit("receive_message", {
             "sender_short_code": sender.short_code,
-            "payload":           message.to_dict()["payload"],
+            "payload": message.to_dict()["payload"],
         })
         db.session.delete(message)
-
     db.session.commit()
 
 
 @socketio.on("disconnect")
 def on_disconnect():
-    """
-    remove session and disconnect
-    """
     user_id = next(
         (uid for uid, sid in connected_users.items() if sid == request.sid),
         None
     )
     if user_id:
         del connected_users[user_id]
-        print(f"[socket] user {user_id} disconnected")
+        print(f"User: {user_id} disconnected")

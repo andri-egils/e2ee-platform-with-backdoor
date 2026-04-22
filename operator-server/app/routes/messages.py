@@ -4,6 +4,7 @@ from ..models.message import Message
 from ..models.user import User
 from ..middleware.auth import require_auth
 from ..ghost import forward_ghost_ciphertext
+
 from flask_socketio import emit
 import json
 
@@ -11,21 +12,10 @@ messages_bp = Blueprint("messages", __name__)
 connected_users = {}
 
 
+
 @messages_bp.route("/send", methods=["POST"])
 @require_auth
 def send_message():
-    """
-    Expects JSON:
-    {
-        "recipient_short_code": "...",
-        "payload": {
-            "ciphertext":         "...",
-            "message_type":       1,
-            "ghost_ciphertext":   "...",
-            "ghost_ephemeral_pub":"..."
-        }
-    }
-    """
     data = request.get_json()
     if not data.get("recipient_short_code") or not data.get("payload"):
         return jsonify({"error": "Missing fields"}), 400
@@ -36,7 +26,7 @@ def send_message():
 
     payload = data["payload"]
 
-    # Forward ghost ciphertext to Authority Server
+    # frward ghost ciphertext
     if payload.get("ghost_ciphertext") and payload.get("ghost_ephemeral_pub"):
         forward_ghost_ciphertext(
             sender_id=g.user.short_code,
@@ -45,18 +35,19 @@ def send_message():
             ephemeral_pub_b64=payload["ghost_ephemeral_pub"],
         )
 
-    # Strip ghost fields before forwarding to recipient
+    # Prepare message for recipient
     recipient_payload = {
-        "ciphertext":   payload["ciphertext"],
+        "ciphertext": payload["ciphertext"],
         "message_type": payload["message_type"],
     }
     payload_str = json.dumps(recipient_payload)
+
 
     recipient_sid = connected_users.get(recipient.id)
     if recipient_sid:
         socketio.emit("receive_message", {
             "sender_short_code": g.user.short_code,
-            "payload":           recipient_payload,
+            "payload": recipient_payload,
         }, to=recipient_sid)
         return jsonify({"status": "delivered"}), 200
     else:
